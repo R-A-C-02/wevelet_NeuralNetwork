@@ -38,14 +38,28 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)    # ottimizzatore MAGGIORI
 
 # Training loop (semplificato)
 for epoch in range(100):            # è come un ciclo for che va da 0 a 100 (epoche indica i valori 0,1,2,...99) MAGGIORI INFO A PIE' DI PAGINA
-    optimizer.zero_grad()
-    outputs = model(X_dummy)
-    loss = criterion(outputs, y_dummy)
-    loss.backward()
-    optimizer.step()
+    optimizer.zero_grad()           # azzerra i gradienti accumulati dal passaggio precedente  così da poter ripetere la stessa operazione, sono salvati di default 
+    outputs = model(X_dummy)        # calcola il modello
+    loss = criterion(outputs, y_dummy)  #calcola il loss 
+    loss.backward()                 # calcola i gradienti (per ottenere il miglior modello)
+    optimizer.step()                # aggiorna i parametri del modello
     
     if epoch % 10 == 0:
-        print(f"Epoch {epoch}, Loss: {loss.item():.4f}")
+        print(f"Epoch {epoch}, Loss: {loss.item():.4f}")    #stampa la perdita ogni 10 epoche per monitorare l'andamento 
+
+
+    
+#OUT DA ESEMPIO DEL MODELLO: 
+# Epoch 0, Loss: 0.4643
+# Epoch 10, Loss: 0.3250
+# Epoch 20, Loss: 0.2017
+# Epoch 30, Loss: 0.1140
+# Epoch 40, Loss: 0.0860
+# Epoch 50, Loss: 0.0848
+# Epoch 60, Loss: 0.0802
+# Epoch 70, Loss: 0.0766
+# Epoch 80, Loss: 0.0739
+# Epoch 90, Loss: 0.0710
 
 
 
@@ -73,5 +87,5 @@ Guarda il file "utilità del ADAM.py"
 '''
 
 '''
-Il commadno Epoche serve perchè i NN non imaprano subito e quindi devi rifarli fare lo stesso calcolo più volt (in questo vcaso100 vvolte, ti ricordo che questo è solo per l'istante t=x)
+Il commadno Epoche serve perchè i NN non imaprano subito e quindi devi rifarli fare lo stesso calcolo più volt (in questo vcaso100 vvolte, ti ricordo che questo è solo per l'istante t=x) così da far diminuire la loss
 '''
