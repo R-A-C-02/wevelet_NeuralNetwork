@@ -1,0 +1,16 @@
+PRIMA DI FAR QUALSIASI COSA CREA UN AMBIETNE VIRTULOAE:
+
+1- python -m venv .venv
+
+
+POI ATTIVALO
+2- .venv\Scripts\activate.bat
+
+
+INSTALLA LE LIBRERIE DEL REQUIREMENTS
+3- pip install -r requirements.txt
+
+
+FAI PARTIRE IL MAIN
+4- runna solo il main.py 
+gli altri file python sono solo per spiegare alcuni conetti del main
