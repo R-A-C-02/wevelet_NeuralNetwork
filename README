@@ -1,16 +1,26 @@
-PRIMA DI FAR QUALSIASI COSA CREA UN AMBIETNE VIRTULOAE:
+# Wavelet Neural Network
+Questo progetto mostra come utilizzare una rete neurale in PyTorch per combinare e ridurre i livelli di wavelet-pass di un segnale, con esempi pratici sull'uso di funzioni di attivazione (ReLU) e ottimizzatori (Adam). Il file MAIN.py contiene il modello principale, mentre gli altri file illustrano concetti specifici.
 
-1- python -m venv .venv
+## Installazione
 
+1. Clonare il repository:
+   ```
+   git clone https://github.com/R-A-C-02/wevelet_NeuralNetwork.git
+   cd wevelet_NeuralNetwork
+   ```
 
-POI ATTIVALO
-2- .venv\Scripts\activate.bat
+2. Creare e attivare un ambiente virtuale:
+   ```
+   # Su Windows
+   python -m venv .venv
+   .venv\Scripts\activate
+   
+   # Su macOS/Linux
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
 
-
-INSTALLA LE LIBRERIE DEL REQUIREMENTS
-3- pip install -r requirements.txt
-
-
-FAI PARTIRE IL MAIN
-4- runna solo il main.py 
-gli altri file python sono solo per spiegare alcuni conetti del main
+3. Installare le dipendenze:
+   ```
+   pip install -r requirements.txt
+   ```
