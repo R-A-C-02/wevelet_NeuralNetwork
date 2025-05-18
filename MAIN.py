@@ -1,91 +1,113 @@
-import torch                    # libreria per ML e DL
-import torch.nn as nn           # moduli per la rete neurale
-import torch.optim as optim     # moduli per l'ottimizzazione
+'''MODIFICA LE SEGUENTE COSA PROSSIMO GIRO:
+    crea un modello che runni su tutta la serie storica 
+        quindi crea un ciclo for dove runni il modello per ogni osservazione delle onde 
+    Insrisci i dati:
+        crea un collegamento al file che contiene le wevelets
+    inserisci grafici:
+        1- dove si vede l'andamento della combinazione dei wevelet pass rispetto alla wave madre (S)
+        2- fail il grafico 1 ma come una sommatoria (così da creare una fake-serie storica)
+'''
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import math
+import numpy as np
 
-# questo modello per un istante t del segnale madre (fai finta che il segnale sia lungo 2048 osservazioni, noi stiamo calcolando la combianzione di wevvelet-pass per t=1  ) quindi sarà da strutturare poi un modello LM ancor apiù grande per tutto il segnale. Per questo sto facnedo qauesta NN che da come oput put solo 3 wevelet pass e non 11 o 6, così da rendre a livvello computazionale\di calcolo fattibile il modello più grande (che è effettiavmente     quello che useremo in pratica) se non mi sono spiegato bene su che cosa fa questo NN guarda il seguente documento a pagine 4\15 e credo possa esser più comprensibile :  https://www.docenti.unina.it/webdocenti-be/allegati/materiale-didattico/89098
+# Gumbel-Softmax utilities
+def sample_gumbel(shape, eps=1e-20):
+    U = torch.rand(shape)
+    return -torch.log(-torch.log(U + eps) + eps)
 
+def gumbel_softmax_sample(logits, temperature):
+    gumbel_noise = sample_gumbel(logits.shape)
+    y = logits + gumbel_noise
+    return F.softmax(y / temperature, dim=-1)
 
+def gumbel_softmax(logits, temperature=1.0, hard=False):
+    y_soft = gumbel_softmax_sample(logits, temperature)
+    if hard:
+        index = y_soft.max(dim=-1, keepdim=True)[1]
+        y_hard = torch.zeros_like(y_soft).scatter_(-1, index, 1.0)
+        return (y_hard - y_soft).detach() + y_soft
+    else:
+        return y_soft
 
-class WaveletWeight(nn.Module): # Rete neurale con 6 input e 3 output, ogni input è un livello di wevelts
-    def __init__(self):         # costruzione della rete neurale con 3 layer e 4 neuroni (1 input, 2 hidden, 1 output)
-        super(WaveletWeight, self).__init__()   # fc= fully connected 
-        self.fc1 = nn.Linear(6, 64)     # 6 input = 64 neuroni (disolito si inizia con questa quantità, è modificabile)
-        self.fc2 = nn.Linear(64, 32)    # i 32 gli ho scleti io, convenzione di scrittura
-        self.fc3 = nn.Linear(32, 3)     # 3 output = 3 livelli di wevelet ponderati in modo diverso
-        self.relu = nn.ReLU()           # funzione di attivazione - unità linerare rettificata (per modellare relazioni complesse), MAGGIORI INFO A PIE' DI PAGINA
-     
+# GumbelSelector con pesi
+class GumbelSelectorWeighted(nn.Module):
+    def __init__(self, input_size=6, k=3):
+        super().__init__()
+        self.k = k
+        self.logits = nn.Parameter(torch.randn(input_size))  # per la selezione
+        self.output_weights = nn.Parameter(torch.rand(k))    # pesi appresi
 
-    def forward(self, x):           # passaggio dei dati attraverso la rete
-        x = self.relu(self.fc1(x))  #passaggio dati anche per il non lineare "relu"
-        x = self.relu(self.fc2(x))
-        out = self.fc3(x)           #lo stratto finale va senza attivvazine (relu)
-        return out                  # 3 valori output MAGGIORI INFO A PIE' DI PAGINA
+    def forward(self, x, temperature=0.5):
+        # 1. Gumbel softmax sampling
+        probs = gumbel_softmax(self.logits.unsqueeze(0), temperature=temperature, hard=False)
+        _, topk_indices = torch.topk(probs, self.k, dim=1)
 
+        # 2. Estrai solo i k input selezionati
+        selected_inputs = x[:, topk_indices[0]]  # shape: (batch_size, k)
 
-# ESEMPIO RANDOM
-# Esempio di input: batch\lista di segnali in cui ogni riga è un'osservazione: [A1, A4, A5, A8, A11, ...] [[A1, A4, A5, A8, A11, ...] [A1, A4, A5, A8, A11, ...] [A1, A4, A5, A8, A11, ...] 
-batch_size = 32
-X_dummy = torch.rand(batch_size, 6) # numeri casualoitra 0 e 1
+        # 3. Applica i pesi solo ai selezionati
+        weighted_sum = (selected_inputs * self.output_weights).sum(dim=1, keepdim=True)
 
-y_dummy = torch.rand(batch_size, 3) # Target dummy = target casuale
-
-
-# Istanziamento del modello
-model = WaveletWeight()
-criterion = nn.MSELoss()            # è la funzione di costo (quanto lontane sono le sue previsioni dal target)
-optimizer = optim.Adam(model.parameters(), lr=0.001)    # ottimizzatore MAGGIORI INFO A PIE' DI PAGINA
-
-# Training loop (semplificato)
-for epoch in range(100):            # è come un ciclo for che va da 0 a 100 (epoche indica i valori 0,1,2,...99) MAGGIORI INFO A PIE' DI PAGINA
-    optimizer.zero_grad()           # azzerra i gradienti accumulati dal passaggio precedente  così da poter ripetere la stessa operazione, sono salvati di default 
-    outputs = model(X_dummy)        # calcola il modello
-    loss = criterion(outputs, y_dummy)  #calcola il loss 
-    loss.backward()                 # calcola i gradienti (per ottenere il miglior modello)
-    optimizer.step()                # aggiorna i parametri del modello
+        return weighted_sum, topk_indices, self.output_weights
     
-    if epoch % 10 == 0:
-        print(f"Epoch {epoch}, Loss: {loss.item():.4f}")    #stampa la perdita ogni 10 epoche per monitorare l'andamento 
-
-
-    
-#OUT DA ESEMPIO DEL MODELLO: 
-# Epoch 0, Loss: 0.4643
-# Epoch 10, Loss: 0.3250
-# Epoch 20, Loss: 0.2017
-# Epoch 30, Loss: 0.1140
-# Epoch 40, Loss: 0.0860
-# Epoch 50, Loss: 0.0848
-# Epoch 60, Loss: 0.0802
-# Epoch 70, Loss: 0.0766
-# Epoch 80, Loss: 0.0739
-# Epoch 90, Loss: 0.0710
 
 
 
+# Input
+# Definisci i mini-indici con valori random
+a1 = round(np.random.uniform(1, 100), 2)
+a2 = round(np.random.uniform(1, 100), 2)
+a3 = round(np.random.uniform(1, 100), 2)
+a4 = round(np.random.uniform(1, 100), 2)
+a5 = round(np.random.uniform(1, 100), 2)
+a6 = round(np.random.uniform(1, 100), 2)
+gigino = torch.tensor([[a1, a2, a3, a4, a5, a6]])
 
-'''
-Le funzioni di attivazione (come ReLU) sono fondamentali nelle reti neurali
-perché introducono non linearità tra i layer. Senza di esse, la rete sarebbe
-una semplice combinazione di trasformazioni lineari, incapace di modellare
-relazioni complesse tra variabili (es. curve, soglie, saturazioni)
-ReLU (Rectified Linear Unit) è definita come:
-    ReLU(x) = x se x ≥ 0, altrimenti 0
-Guarda il file "utilità del ReLU().py"
-'''
+# Definisci il valore S con un valore random
+S_true = torch.tensor([[365.]])
 
-'''
-Come 3 out possiamo mettere la combinazione ideale di wevvelts (pondeate) che si avinano il più possibile ad S
-L'idea è di portare 11 wevelets-pass (A1, A2,A3,....A11) a 3 output, quindi 3 wevelets-pass che combinati ci diano un +90% di rappresentazione del S,  così da avvere un modello più leggero ma allos tesso pratico (e fare un pò gli sborroni alla giuria dell'enel ma soprattutto rendere i calcoli per i prossimi modelli di ML più fattibili )
-'''
 
-'''
-OTTIMIZZATORE: Adam (Adaptive Moment Estimation) Prende i pesi appena creati e li modfica leggermente per minimizzare il loss
-' model.parameters()' passa tutti i parametri  del modello all'ottimizzatore 
-! lr= 0.001' è il learning rate, ovvero la velocità con cui l'ottimizzatore cerca di minimizzare il loss
-Guarda il file "utilità del ADAM.py"
-'''
+model = GumbelSelectorWeighted()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
+loss_fn = nn.MSELoss()
 
-'''
-Il commadno Epoche serve perchè i NN non imaprano subito e quindi devi rifarli fare lo stesso calcolo più volt (in questo vcaso100 vvolte, ti ricordo che questo è solo per l'istante t=x) così da far diminuire la loss
-'''
+
+# Training loop
+for epoch in range(1000):
+    optimizer.zero_grad()
+    pred, indices, weights = model(gigino, temperature=0.5)
+    loss = loss_fn(pred, S_true)
+    loss.backward()
+    optimizer.step()
+    abs_loss = math.sqrt(loss.item())
+
+    if epoch % 100 == 0:
+        print(f"Epoch {epoch}, MSE: {loss.item():.4f}, Loss (absolute): {abs_loss:.4f}, Prediction: {pred.item():.2f}")
+
+# Output finale
+final_pred, final_indices, final_weights = model(gigino, temperature=0.1)
+
+# Stampa i valori di tutti gli indici
+print("Valori degli indici:")
+print("S:", S_true)
+print("a1:", a1)
+print("a2:", a2)
+print("a3:", a3)
+print("a4:", a4)
+print("a5:", a5)
+print("a6:", a6)
+
+print("\nFinal prediction:", final_pred.item())
+print("Selected indices:", final_indices.tolist())
+print("Selected weights:", final_weights.detach().numpy())
+
+# Mostra i 3 elementi scelti da gigino e i loro pesi
+selected_values = gigino[0, final_indices[0]]
+weighted_values = selected_values * final_weights
+print("Selected values:", selected_values.detach().numpy())
+print("Weighted contribution:", weighted_values.detach().numpy())
+print("Final sum:", weighted_values.sum().item())
