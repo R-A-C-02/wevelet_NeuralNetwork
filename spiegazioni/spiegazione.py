@@ -21,7 +21,12 @@ import torch.nn as nn           # moduli per la rete neurale
 import torch.optim as optim     # moduli per l'ottimizzazione
 
 
-# questo modello per un istante t del segnale madre (fai finta che il segnale sia lungo 2048 osservazioni, noi stiamo calcolando la combianzione di wevvelet-pass per t=1  ) quindi sarà da strutturare poi un modello LM ancor apiù grande per tutto il segnale. Per questo sto facnedo qauesta NN che da come oput put solo 3 wevelet pass e non 11 o 6, così da rendre a livvello computazionale fattibile il modello più grande (che è effettiavmente quello che useremo in pratica) se non mi sono spiegato bene su che cosa fa questo NN guarda il seguente documento a pagine 4\15 e credo possa esser più comprensibile :  https://www.docenti.unina.it/webdocenti-be/allegati/materiale-didattico/89098
+# questo modello per un istante t del segnale madre (fai finta che il segnale sia lungo 2048 osservazioni, noi stiamo 
+# calcolando la combianzione di wevvelet-pass per t=1  ) quindi sarà da strutturare poi un modello LM ancor apiù grande 
+# per tutto il segnale. Per questo sto facnedo qauesta NN che da come oput put solo 3 wevelet pass e non 11 o 6, così da 
+# rendre a livvello computazionale fattibile il modello più grande (che è effettiavmente quello che useremo in pratica) 
+# se non mi sono spiegato bene su che cosa fa questo NN guarda il seguente documento a pagine 4\15 e credo possa esser 
+# più comprensibile :  https://www.docenti.unina.it/webdocenti-be/allegati/materiale-didattico/89098
 
 
 
@@ -94,7 +99,9 @@ Guarda il file "utilità del ReLU().py"
 
 '''
 2'Come 3 out possiamo mettere la combinazione ideale di wevvelts (pondeate) che si avinano il più possibile ad S
-L'idea è di portare 11 wevelets-pass (A1, A2,A3,....A11) a 3 output, quindi 3 wevelets-pass che combinati ci diano un +90% di rappresentazione del S,  così da avvere un modello più leggero ma allos tesso pratico (e fare un pò gli sborroni alla giuria dell'enel ma soprattutto rendere i calcoli per i prossimi modelli di ML più fattibili )
+L'idea è di portare 11 wevelets-pass (A1, A2,A3,....A11) a 3 output, quindi 3 wevelets-pass che combinati ci diano un 
++90% di rappresentazione del S,  così da avvere un modello più leggero ma allos tesso pratico (e fare un pò gli sborroni 
+alla giuria dell'enel ma soprattutto rendere i calcoli per i prossimi modelli di ML più fattibili )
 '''
 
 '''
@@ -105,7 +112,8 @@ Guarda il file "utilità del ADAM.py"
 '''
 
 '''
-4'Il commadno Epoche serve perchè i NN non imaprano subito e quindi devi rifarli fare lo stesso calcolo più volt (in questo vcaso100 vvolte, ti ricordo che questo è solo per l'istante t=x) così da far diminuire la loss
+4'Il commadno Epoche serve perchè i NN non imaprano subito e quindi devi rifarli fare lo stesso calcolo più volt (in 
+questo vcaso100 vvolte, ti ricordo che questo è solo per l'istante t=x) così da far diminuire la loss
 '''
 
 
@@ -243,7 +251,10 @@ y_desiderato = torch.tensor([S, 0, 0])
 
 '''
 X' Immagina di avere 6 scatole, una per ogni input (A1, A2, A3, A4, A5, A6). Ogni scatola contiene un numero.
-Il codice X = torch.tensor([A1, A2, A3, A4, A5, A6]) crea un mega contenitore  chiamato "tensore" (X) che tiene dentro tutte e 6 le scatole con i numeri. Poi, il computer può usare il contenitore (X) per fare calcoli e operazioni con i numeri dentro.
-In questo caso, il contenitore (X) è utilizzato come input per la rete neurale, che significa che la rete neurale userà i numeri dentro il contenitore (X) per fare calcoli e produrre un output.
+Il codice X = torch.tensor([A1, A2, A3, A4, A5, A6]) crea un mega contenitore  chiamato "tensore" (X) che tiene dentro
+tutte e 6 le scatole con i numeri. Poi, il computer può usare il contenitore (X) per fare calcoli e operazioni con 
+i numeri dentro.
+In questo caso, il contenitore (X) è utilizzato come input per la rete neurale, che significa che la rete neurale 
+userà i numeri dentro il contenitore (X) per fare calcoli e produrre un output.
 '''
 
