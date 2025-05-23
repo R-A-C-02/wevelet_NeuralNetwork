@@ -1,4 +1,5 @@
 '''MODIFICA LE SEGUENTE COSA PROSSIMO GIRO:
+    aggiorna la rete deep learning conun secondo-terzo gruppo di neuroni
     crea un modello che runni su tutta la serie storica 
         quindi crea un ciclo for dove runni il modello per ogni osservazione delle onde 
     Insrisci i dati:

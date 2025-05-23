@@ -131,42 +131,52 @@ import torch.nn.functional as F         # Funzioni matematiche avanzate come sof
 import math                             # Libreria per funzioni matematiche di base
 import numpy as np                      # Libreria per gestire array e numeri casuali
 
-# Gumbel-Softmax utilities
-def sample_gumbel(shape, eps=1e-20):
-    U = torch.rand(shape)               # Crea numeri casuali tra 0 e 1
-    return -torch.log(-torch.log(U + eps) + eps)    # Trasforma questi numeri per ottenere rumore "Gumbel"
 
-def gumbel_softmax_sample(logits, temperature):
-    gumbel_noise = sample_gumbel(logits.shape)  # Aggiunge rumore
-    y = logits + gumbel_noise           # Somma il rumore ai punteggi (logits)
-    return F.softmax(y / temperature, dim=-1)   # Fa una scelta morbida su quali numeri preferire
 
+# Gumbel-Softmax utilities, SPIEGAZIONE A PIE' DI PAGINA'1
+def sample_gumbel(shape, eps=1e-20):                    #Funzione per generare rumore Gumbel
+    U = torch.rand(shape)                               # Numeri casuali uniformi tra 0 e 1
+    return -torch.log(-torch.log(U + eps) + eps)        # Trasforma questi numeri per ottenere rumore "Gumbel"
+
+
+
+def gumbel_softmax_sample(logits, temperature):         # Anche questa funzione è presente a PIE' DI PAGINA'1
+    gumbel_noise = sample_gumbel(logits.shape)          # Genera rumore casuale con forma uguale ai logits
+    y = logits + gumbel_noise                           # Crea punteggi disturbati per fare scelte esplorative
+    return F.softmax(y / temperature, dim=-1)           # Trasforma i punteggi in probabilità (addestrabili)
+
+
+# Gumbel-Softmax, ON\OFF hard , SPIEGAZIONE A PIE' DI PAGINA'2
 def gumbel_softmax(logits, temperature=1.0, hard=False):
-    y_soft = gumbel_softmax_sample(logits, temperature)
+    y_soft = gumbel_softmax_sample(logits, temperature)             # Risultato: y_soft è un vettore di probabilità morbide.[0.84, 0.11, 0.05] 
     if hard:
-        index = y_soft.max(dim=-1, keepdim=True)[1]  # Trova l'indice con probabilità massima
+        index = y_soft.max(dim=-1, keepdim=True)[1]                 # Trova l'indice con probabilità massima
         y_hard = torch.zeros_like(y_soft).scatter_(-1, index, 1.0)  # Crea un vettore con 1 solo in quella posizione
-        return (y_hard - y_soft).detach() + y_soft   # Torna un vettore “duro” ma con gradiente
+        return (y_hard - y_soft).detach() + y_soft                  # Torna un vettore “duro” ma con gradiente
     else:
-        return y_soft                   # Torna un vettore “morbido”
+        return y_soft                                               # Torna un vettore “morbido”
 
-# GumbelSelector con pesi, SPIEGAZIONE A PIE' DI PAGINA'1
+
+
+# GumbelSelector con pesi, SPIEGAZIONE A PIE' DI PAGINA'3 
 class GumbelSelectorWeighted(nn.Module):
-    def __init__(self, input_size=6, k=3):
-        super().__init__()
-        self.k = k
+    def __init__(self, input_size=6, k=3):                  # quanti input inserire e quanti output ottenere
+        super().__init__()                                  # serve per iniziallizare corretamente la classe
+        self.k = k                                          # quanti input selezionare
         self.logits = nn.Parameter(torch.randn(input_size))  # per la selezione
         self.output_weights = nn.Parameter(torch.rand(k))    # pesi appresi
 
+
+
     def forward(self, x, temperature=0.5):
-        # 1. Gumbel softmax sampling
+        # 1. Calcola probabilità con Gumbel-softmax, succede che simula scelta tra input
         probs = gumbel_softmax(self.logits.unsqueeze(0), temperature=temperature, hard=False)
         _, topk_indices = torch.topk(probs, self.k, dim=1)
 
         # 2. Estrai solo i k input selezionati
         selected_inputs = x[:, topk_indices[0]]  # shape: (batch_size, k)
 
-        # 3. Applica i pesi solo ai selezionati
+        # 3. Moltiplica input scelti per pesi appres
         weighted_sum = (selected_inputs * self.output_weights).sum(dim=1, keepdim=True)
 
         return weighted_sum, topk_indices, self.output_weights
@@ -246,8 +256,37 @@ y_desiderato = torch.tensor([S, 0, 0])
 
 
 '''
-1' La Gumbel-Softmax è un trucco per STO PREPARANDO IL MATERIALE . PROBABILOEMNTE SARA' UN FILE NELLA CARTELLA "file_integrativi"
+1' Immagina di aggiungere rumore (come disturbo casuale) a una decisione\scelta\choice per rendere le scelte meno prevedibili. 
+Il Gumbel noise è un tipo di rumore casuale usato per simulare scelte discrete (tipo "scegli il più grande") in modo probabilistico. 
+Spiegazione dettagvliata su softmax_vs_gumbel_softmax.ipynb
 '''
+
+
+
+'''
+2. obiettivo della funzione:
+Simulare una scelta discreta (tipo argmax) ma in modo continuo e differenziabile.
+    Usi la Gumbel-Softmax per fare una scelta probabilistica e addestrabile.
+    Se hard=True, restituisce un one-hot vector (cioè una scelta netta).
+    Ma lo fa in modo differenziabile, quindi può essere usato nel training di una rete.
+Spiegazione dettalgiata su ONorOFF_hard_choice.ipynb
+'''
+
+
+
+
+'''
+3. Questo codice definisce una classe PyTorch chiamata GumbelSelectorWeighted, che serve a selezionare automaticamente un 
+sottoinsieme di input (es. 3 su 6) e assegnare loro dei pesi appresi per stimare una quantità come una somma ponderata.
+
+Quando diciamo “classe PyTorch”, intendiamo una classe Python che estende torch.nn.Module, cioè che fa parte della 
+struttura con cui PyTorch costruisce modelli neurali personalizzati.
+
+Spiegazione riga per riga di qeusta classe la trovi in GumbelSelectorWeighted.py
+'''
+
+
+
 
 '''
 X' Immagina di avere 6 scatole, una per ogni input (A1, A2, A3, A4, A5, A6). Ogni scatola contiene un numero.
