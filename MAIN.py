@@ -122,11 +122,6 @@ for epoch in range(max_epochs):
         best_indices = indices.clone()
         best_weights = weights.clone()
 
-    # # Stampa progressi
-    # if epoch % 10 == 0 or epoch == max_epochs - 1:
-    #     print(f"\nEpoch {epoch}, MSE: {loss.item():.4f}, Loss (absolute): {abs_loss:.4f}, Prediction: {pred.item():.2f}")
-    #     print(f"Selected indices: {indices}, Selected weights: {weights}")
-
     # Condizione di early stopping (entro ± early_stop_tolerance% di S_true)
     target = S_true.item()
     lower_bound = target * (1 - early_stop_tolerance)
