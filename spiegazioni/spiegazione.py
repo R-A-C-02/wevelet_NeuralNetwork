@@ -125,6 +125,59 @@ questo vcaso100 vvolte, ti ricordo che questo è solo per l'istante t=x) così d
 #2° versione della RN
 ######################################################################################################################################
 
+"""
+─────────────────────────────────────────────────────────────────────────────
+📘 SPIEGAZIONE DEL MODELLO GUMBELSELECTORWEIGHTED
+─────────────────────────────────────────────────────────────────────────────
+
+✅ COSA FA QUESTO CODICE?
+────────────────────────────
+Il modello `GumbelSelectorWeighted` è un blocco di selezione e ponderazione:
+- Prende 6 input numerici (es. a1, a2, a3, a4, a5, a6).
+- Sceglie automaticamente i 3 input più utili tramite Gumbel-Softmax.
+- Applica loro dei pesi allenabili.
+- Somma i contributi pesati per stimare un valore finale S.
+
+Anche se non ha strati di neuroni o layer nascosti (come una classica RN), è comunque un modello
+allenabile: ottimizza i parametri (logits e pesi) usando backpropagation.
+
+────────────────────────────
+⚙️ COMPONENTI PRINCIPALI:
+────────────────────────────
+- logits (parametri): determinano quali input scegliere.
+- Gumbel-Softmax: introduce una scelta probabilistica, ma differenziabile.
+- output_weights: pesi specifici per i 3 input selezionati.
+- Somma finale: combina gli input pesati per fare la stima.
+- MSE loss + Adam optimizer: aggiornano logits e pesi per ridurre l’errore.
+
+                        Molto bella come spiegazione- da isnerire nel README
+                        ────────────────────────────
+                        🔍 PERCHÉ SEMBRA QUASI CASUALE?
+                        ────────────────────────────
+                        La selezione degli input usa Gumbel-Softmax, che aggiunge un elemento di
+                        casualità (per esplorare). Tuttavia, questa casualità è controllata:
+                        il modello impara progressivamente a preferire gli input più utili
+                        grazie all’ottimizzazione.
+
+                        Non è un semplice brute-force, ma un processo guidato
+                        da ottimizzazione differenziabile.
+
+                        ────────────────────────────
+                        🚀 È UNA RETE NEURALE?
+                        ────────────────────────────
+                        - Non è una rete neurale classica: non ha strati di neuroni e attivazioni.
+                        - Ma è un modello allenabile con PyTorch, con parametri ottimizzati
+                        tramite gradient descent, come avviene nelle reti neurali.
+
+────────────────────────────
+🧠 FRASE CHIAVE DA RICORDARE
+────────────────────────────
+Questo modello non usa neuroni, ma è un sistema differenziabile
+che impara selezione e ponderazione, ottimizzando direttamente
+i parametri con backpropagation.
+"""
+
+
 import torch                            # Libreria per i tensori e le reti neurali
 import torch.nn as nn                   # Modulo per creare i modelli neurali
 import torch.nn.functional as F         # Funzioni matematiche avanzate come softmax
@@ -160,38 +213,37 @@ def gumbel_softmax(logits, temperature=1.0, hard=False):
 
 # GumbelSelector con pesi, SPIEGAZIONE A PIE' DI PAGINA'3 
 class GumbelSelectorWeighted(nn.Module):
-    def __init__(self, input_size=6, k=3):                  # quanti input inserire e quanti output ottenere
-        super().__init__()                                  # serve per iniziallizare corretamente la classe
-        self.k = k                                          # quanti input selezionare
+    def __init__(self, input_size=6, k=3):                   # quanti input inserire e quanti output ottenere
+        super().__init__()                                   # serve per iniziallizare corretamente la classe
+        self.k = k                                           # quanti input selezionare
         self.logits = nn.Parameter(torch.randn(input_size))  # per la selezione
         self.output_weights = nn.Parameter(torch.rand(k))    # pesi appresi
 
 
 
     def forward(self, x, temperature=0.5):
-        # 1. Calcola probabilità con Gumbel-softmax, succede che simula scelta tra input
+        # 1. Calcola probabilità con Gumbel-softmax
         probs = gumbel_softmax(self.logits.unsqueeze(0), temperature=temperature, hard=False)
         _, topk_indices = torch.topk(probs, self.k, dim=1)
 
         # 2. Estrai solo i k input selezionati
-        selected_inputs = x[:, topk_indices[0]]  # shape: (batch_size, k)
+        selected_inputs = x[:, topk_indices[0]]  
 
         # 3. Moltiplica input scelti per pesi appres
         weighted_sum = (selected_inputs * self.output_weights).sum(dim=1, keepdim=True)
 
         return weighted_sum, topk_indices, self.output_weights
-    
 
 
 
 # Input
 # Definisci i mini-indici con valori random
-a1 = round(np.random.uniform(1, 100), 2)
-a2 = round(np.random.uniform(1, 100), 2)
-a3 = round(np.random.uniform(1, 100), 2)
-a4 = round(np.random.uniform(1, 100), 2)
-a5 = round(np.random.uniform(1, 100), 2)
-a6 = round(np.random.uniform(1, 100), 2)
+a1 = 18.98
+a2 = 20.02
+a3 = 33.02
+a4 = 34.02
+a5 = 26.12
+a6 = 55.45
 # Creazione della lista di tensori di input, SPIEGAZIONE A PIE' DI PAGINA'X
 gigino = torch.tensor([[a1, a2, a3, a4, a5, a6]])
 
@@ -296,4 +348,10 @@ i numeri dentro.
 In questo caso, il contenitore (X) è utilizzato come input per la rete neurale, che significa che la rete neurale 
 userà i numeri dentro il contenitore (X) per fare calcoli e produrre un output.
 '''
+
+
+######################################################################################################################################
+#3° versione della RN
+######################################################################################################################################
+
 
