@@ -70,37 +70,37 @@ plot_data = {
     'Gold': pd.Series(gold, index=reference_dates[:len(gold)])
 }
 
-# Imposta la figura con 2 righe e 3 colonne
-fig, axs = plt.subplots(2, 3, figsize=(18, 10))
-fig.suptitle('Serie Storiche Scaricate da TradingView', fontsize=16)
+# # Imposta la figura con 2 righe e 3 colonne
+# fig, axs = plt.subplots(2, 3, figsize=(18, 10))
+# fig.suptitle('Serie Storiche Scaricate da TradingView', fontsize=16)
 
-# Ciclo per riempire ogni subplot
-for i, (key, series) in enumerate(plot_data.items()):
-    row, col = divmod(i, 3)  # calcola riga e colonna
-    axs[row, col].plot(series.index, series.values, label=key)
-    axs[row, col].set_title(key)
-    axs[row, col].set_xlabel('Data')
-    axs[row, col].set_ylabel('Prezzo')
-    axs[row, col].grid(True)
-    axs[row, col].legend()
+# # Ciclo per riempire ogni subplot
+# for i, (key, series) in enumerate(plot_data.items()):
+#     row, col = divmod(i, 3)  # calcola riga e colonna
+#     axs[row, col].plot(series.index, series.values, label=key)
+#     axs[row, col].set_title(key)
+#     axs[row, col].set_xlabel('Data')
+#     axs[row, col].set_ylabel('Prezzo')
+#     axs[row, col].grid(True)
+#     axs[row, col].legend()
 
-plt.tight_layout(rect=[0, 0, 1, 0.95])  # lascia spazio al titolo generale
-plt.show()
+# plt.tight_layout(rect=[0, 0, 1, 0.95])  # lascia spazio al titolo generale
+# plt.show()
 
-# --- CREAZIONE DATAFRAME UNIFICATO PER EXPORT ---
-export_df = pd.DataFrame({
-    'Date': reference_dates
-})
+# # --- CREAZIONE DATAFRAME UNIFICATO PER EXPORT ---
+# export_df = pd.DataFrame({
+#     'Date': reference_dates
+# })
 
-# Aggiungi ogni serie come colonna, allineando sulle date
-for key, series in plot_data.items():
-    export_df[key] = series.values
+# # Aggiungi ogni serie come colonna, allineando sulle date
+# for key, series in plot_data.items():
+#     export_df[key] = series.values
 
-# Imposta la colonna Date come indice
-export_df.set_index('Date', inplace=True)
+# # Imposta la colonna Date come indice
+# export_df.set_index('Date', inplace=True)
 
-# --- SALVA IN EXCEL ---
-export_file = 'serie_storiche_tradingview.xlsx'
-export_df.to_excel(export_file)
+# # --- SALVA IN EXCEL ---
+# export_file = 'serie_storiche_tradingview.xlsx'
+# export_df.to_excel(export_file)
 
-print(f"✅ File Excel esportato correttamente: {export_file}")
+# print(f"✅ File Excel esportato correttamente: {export_file}")
