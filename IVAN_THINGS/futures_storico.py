@@ -1,3 +1,4 @@
+# estrazione dei rolling dei futures
 from tvDatafeed import TvDatafeed, Interval
 import pandas as pd
 import numpy as np
