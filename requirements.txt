@@ -7,6 +7,7 @@ fonttools==4.58.0
 fsspec==2025.3.2
 idna==3.10
 Jinja2==3.1.6
+joblib==1.5.1
 kiwisolver==1.4.8
 MarkupSafe==3.0.2
 matplotlib==3.10.3
@@ -20,9 +21,12 @@ pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 pytz==2025.2
 requests==2.32.3
+scikit-learn==1.6.1
+scipy==1.15.3
 setuptools==80.7.1
 six==1.17.0
 sympy==1.14.0
+threadpoolctl==3.6.0
 torch==2.7.0
 tvdatafeed @ git+https://github.com/rongardF/tvdatafeed.git@e6f6aaa7de439ac6e454d9b26d2760ded8dc4923
 typing_extensions==4.13.2

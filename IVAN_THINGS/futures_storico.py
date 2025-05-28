@@ -1,67 +1,64 @@
-# estrazione dei rolling dei futures
-from tvDatafeed import TvDatafeed, Interval
+# Estrazione dei prezzi rolling dei futures principali + VIX + Gold
+# Dati scaricati da TradingView usando tvDatafeed
+
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+from tvDatafeed import TvDatafeed, Interval
 
-# Autenticazione su TradingView
-username = 'alex2112545'
-password = 'Gigino123.123'
+# ==== CONFIGURAZIONE ====
+N_BARS = 1400  # Numero di barre storiche (giornaliere) da scaricare
+
+# ==== CONNESSIONE A TRADINGVIEW ====
 tv = TvDatafeed()
 
-# Simboli e exchange
-symbol_data = {
-    'HG_close': ('HG1!', 'COMEX'),          # rame
-    'ALI_close': ('ALI1!', 'COMEX'),        # alluminio
-    'BZ_close': ('BZN2025', 'NYMEX'),       # petrolio Brent
-    'EUA_close': ('ECFZ2025', 'ICEENDEX')   # permessi CO₂
+# ==== SIMBOLI FUTURES ====
+futures_symbols = {
+    'HG_close': ('HG1!', 'COMEX'),        # Rame
+    'ALI_close': ('ALI1!', 'COMEX'),      # Alluminio
+    'BZ_close': ('BZN2025', 'NYMEX'),     # Brent
+    'EUA_close': ('ECFZ2025', 'ICEENDEX') # Permessi CO₂
 }
 
-# Scaricare datistorici (1400 giorni, solo pr. chiusura)
-dataframes = {}
-for col_name, (symbol, exchange) in symbol_data.items():
-    df = tv.get_hist(symbol=symbol, exchange=exchange, interval=Interval.in_daily, n_bars=1400)
+# ==== FUNZIONE PER SCARICARE SERIE DI CHIUSURA ====
+def fetch_close_series(symbol, exchange, n_bars=N_BARS):
+    df = tv.get_hist(symbol, exchange, interval=Interval.in_daily, n_bars=n_bars)
     if df is not None and not df.empty:
-        df = df[['close']].reset_index(drop=True) 
-        dataframes[col_name] = df
+        return df['close'].reset_index(drop=True)
     else:
-        print(f"Errore: Dati non disponibili per {symbol} su {exchange}")
+        print(f"❌ Errore: Dati non disponibili per {symbol} su {exchange}")
+        return pd.Series(dtype=float)
 
+# ==== SCARICA FUTURES PRINCIPALI ====
+dataframes = {name: fetch_close_series(sym, exch) for name, (sym, exch) in futures_symbols.items()}
 
-reference_asset = next(iter(dataframes)) 
-reference_dates = tv.get_hist(
-    symbol=symbol_data[reference_asset][0],
-    exchange=symbol_data[reference_asset][1],
-    interval=Interval.in_daily,
-    n_bars=1400
-).index.normalize()  # Date normalizzate
+# ==== DEFINISCI DATE DI RIFERIMENTO ====
+# Usa il primo asset disponibile come riferimento date
+reference_asset = next(iter(dataframes))
+reference_dates = tv.get_hist(futures_symbols[reference_asset][0], futures_symbols[reference_asset][1], interval=Interval.in_daily, n_bars=N_BARS).index.normalize()
 
-vix=tv.get_hist(symbol='VIX', exchange='CBOE', interval=Interval.in_daily, n_bars=1400)
-vix = vix['close'].reset_index(drop=True)
-vix.index = reference_dates[:len(vix)]
-gold = tv.get_hist(symbol='GC1!', exchange='COMEX', interval=Interval.in_daily, n_bars=1400)
-gold=gold['close'].reset_index(drop=True)
-gold.index=reference_dates[:len(gold)]
+# ==== SCARICA VIX E ORO ====
+vix_series = fetch_close_series('VIX', 'CBOE', N_BARS)
+gold_series = fetch_close_series('GC1!', 'COMEX', N_BARS)
 
-# Combina i dati in un unico DataFrame
-close_data = pd.concat(dataframes.values(), axis=1)
-close_data.columns = list(dataframes.keys())  
-close_data.index = reference_dates  
+# ==== COSTRUISCI DATAFRAME COMBINATO ====
+close_data = pd.DataFrame({k: v for k, v in dataframes.items() if not v.empty})
+close_data.index = reference_dates[:len(close_data)]
 
-# Calcolo log-prezzi e rendimenti logaritmici
-close_data_l = np.log(close_data)
+# ==== CALCOLA LOG-PREZZI E RENDIMENTI ====
+log_prices = np.log(close_data)
 returns = np.log(close_data / close_data.shift(1)).dropna()
 
-len_train = int(len(returns)*0.8)                            #sta roba sta qua per praticita
-returns_train = returns[:len_train]
-returns_test = returns[len_train:]
+# ==== SPLIT TRAIN/TEST (80/20) ====
+split_point = int(len(returns) * 0.8)
+returns_train = returns.iloc[:split_point]
+returns_test = returns.iloc[split_point:]
 
-signal_data=close_data['BZ_close'].values    #SELEZIONA L'ASSET DA UTILIZZARE COME SEGNALE
-vix=vix.values
-gold=gold.values
+# ==== PREPARA SERIE PER EXPORT O ANALISI ====
+signal_data = close_data['BZ_close'].values  # Usa Brent come segnale
+vix = vix_series.values
+gold = gold_series.values
 
-
-# Prepara i dati in un unico dizionario per comodità
+# ==== PREPARA DIZIONARIO PER PLOT ====
 plot_data = {
     'RAME': close_data['HG_close'],
     'Alluminio': close_data['ALI_close'],
@@ -70,6 +67,16 @@ plot_data = {
     'VIX': pd.Series(vix, index=reference_dates[:len(vix)]),
     'Gold': pd.Series(gold, index=reference_dates[:len(gold)])
 }
+
+# ==== STAMPA DIMENSIONI PER CONTROLLO ====
+print("✅ Dimensioni serie scaricate:")
+for name, series in plot_data.items():
+    print(f"{name}: {series.shape}")
+
+# ==== EXPORT VARIABILI PER USO ESTERNO ====
+# (Se vuoi importarle da altri file)
+__all__ = ['close_data', 'log_prices', 'returns', 'returns_train', 'returns_test', 'signal_data', 'vix', 'gold', 'plot_data']
+
 
 # # Imposta la figura con 2 righe e 3 colonne
 # fig, axs = plt.subplots(2, 3, figsize=(18, 10))
