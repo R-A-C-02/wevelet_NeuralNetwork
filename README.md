@@ -27,3 +27,9 @@ mentre gli altri file illustrano concetti specifici.
    ```
    pip install -r requirements.txt
    ```
+
+3B. possibili problewmi nell'isntallazione delle librerie a cuasa del provide rdi dati. 
+   Installare separatamente il provider di dati gratuito (TradingView) :
+   ```
+   pip install --upgrade --no-cache-dir git+https://github.com/rongardF/tvdatafeed.git
+   ```
