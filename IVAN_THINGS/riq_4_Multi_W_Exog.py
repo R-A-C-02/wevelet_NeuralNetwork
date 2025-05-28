@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from collections import deque
 
-from futures_storico import signal_data
-from filtro_di_Kalman import kalman
+from riq_1_futures_storico  import signal_data
+from riq_2_filtro_di_Kalman import kalman
 from modwt import modwt, modwtmra  # Maximum Overlap Discrete Wavelet Transform + Multi-Resolution Analysis
 
 # === LSTM MODELLO ===

@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # ==== IMPORTA I DATI DAL FILE ====
-from futures_storico import vix, gold
+from riq_1_futures_storico import vix, gold
 
 # ==== CONFIGURAZIONE ====
 ROLLING_WINDOW = 649
